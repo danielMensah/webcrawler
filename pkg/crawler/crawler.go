@@ -50,6 +50,7 @@ func (c *Crawler) Crawl() {
 	start := time.Now()
 
 	go c.run()
+	c.wg.Add(1)
 	c.tasks <- c.baseURL
 
 	c.wg.Wait()
@@ -68,12 +69,11 @@ func (c *Crawler) run() {
 			return
 		case link, ok := <-c.tasks:
 			if !ok {
+				log.Info("tasks channel closed")
 				return
 			}
 
 			log.Info("Extracting content from ", link)
-			c.wg.Add(1)
-
 			go c.extractContent(link)
 		}
 	}
@@ -85,14 +85,7 @@ func (c *Crawler) extractContent(link string) {
 
 	// creating custom logger to help with debugging if an error occurs during the request
 	logger := log.WithField("link", link)
-
-	req, err := http.NewRequest("GET", link, nil)
-	if err != nil {
-		logger.WithError(err).Error("failed to create request")
-		return
-	}
-
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.httpClient.Get(link)
 	if err != nil {
 		logger.WithError(err).Error("failed to get response")
 		return
@@ -111,10 +104,10 @@ func (c *Crawler) extractContent(link string) {
 		return
 	}
 
-	logger.Info("Extracted content from ", link)
 	document.Find("a").Each(func(i int, selection *goquery.Selection) {
 		if href, ok := selection.Attr("href"); ok {
 			formattedURL := formatURL(link, href)
+			logger.WithField("href", formattedURL).Info("found link")
 			c.processLink(formattedURL)
 		}
 	})
@@ -124,6 +117,7 @@ func (c *Crawler) extractContent(link string) {
 func (c *Crawler) processLink(crawledLink string) {
 	if !c.crawledLinks[crawledLink] && strings.HasPrefix(crawledLink, c.baseURL) {
 		c.crawledLinks[crawledLink] = true
+		c.wg.Add(1)
 		c.tasks <- crawledLink
 	}
 }

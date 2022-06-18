@@ -13,3 +13,9 @@ lint.testfmt:
 	test -z $(gofmt -s -l -w .);
 
 lint: lint.fmt lint.vet lint.golangci lint.testfmt
+
+clean:
+	go clean -testcache;
+
+test: clean
+	go test ./...;

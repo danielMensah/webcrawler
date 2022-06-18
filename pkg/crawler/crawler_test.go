@@ -75,7 +75,7 @@ func TestCrawler_Crawl(t *testing.T) {
 		},
 		{
 			name:          "errors when the http status is not 200",
-			htmlPage:      simpleHTML,
+			htmlPage:      nil,
 			httpStatus:    http.StatusNotFound,
 			expectedLinks: nil,
 		},
@@ -86,7 +86,6 @@ func TestCrawler_Crawl(t *testing.T) {
 				w.WriteHeader(tt.httpStatus)
 				_, _ = w.Write(tt.htmlPage)
 			}))
-			defer server.Close()
 
 			for i, l := range tt.expectedLinks {
 				tt.expectedLinks[i] = server.URL + l
