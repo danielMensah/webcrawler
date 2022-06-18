@@ -55,30 +55,30 @@ func TestCrawler_Crawl(t *testing.T) {
 			httpStatus:    http.StatusOK,
 			expectedLinks: []string{"/test", "/dan"},
 		},
-		//{
-		//	name:          "does not visits the same link twice",
-		//	htmlPage:      duplicateLinksHTML,
-		//	httpStatus:    http.StatusOK,
-		//	expectedLinks: []string{"/test", "/dan"},
-		//},
-		//{
-		//	name:          "does not visits external links",
-		//	htmlPage:      externalLinksHTML,
-		//	httpStatus:    http.StatusOK,
-		//	expectedLinks: []string{"/test", "/dan"},
-		//},
-		//{
-		//	name:          "does not visits sites with invalid scheme",
-		//	htmlPage:      invalidSchemeHTML,
-		//	httpStatus:    http.StatusOK,
-		//	expectedLinks: []string{"/test", "/dan"},
-		//},
-		//{
-		//	name:          "errors when the http status is not 200",
-		//	htmlPage:      simpleHTML,
-		//	httpStatus:    http.StatusNotFound,
-		//	expectedLinks: nil,
-		//},
+		{
+			name:          "does not visits the same link twice",
+			htmlPage:      duplicateLinksHTML,
+			httpStatus:    http.StatusOK,
+			expectedLinks: []string{"/test", "/dan"},
+		},
+		{
+			name:          "does not visits external links",
+			htmlPage:      externalLinksHTML,
+			httpStatus:    http.StatusOK,
+			expectedLinks: []string{"/test", "/dan"},
+		},
+		{
+			name:          "does not visits sites with invalid scheme",
+			htmlPage:      invalidSchemeHTML,
+			httpStatus:    http.StatusOK,
+			expectedLinks: []string{"/test", "/dan"},
+		},
+		{
+			name:          "errors when the http status is not 200",
+			htmlPage:      simpleHTML,
+			httpStatus:    http.StatusNotFound,
+			expectedLinks: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

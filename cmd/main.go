@@ -16,7 +16,7 @@ func main() {
 	}
 
 	baseURL := args[0]
-	if valid := isValidURL(baseURL); valid == false {
+	if valid := isValidURL(baseURL); !valid {
 		log.Fatal("Invalid URL")
 	}
 
