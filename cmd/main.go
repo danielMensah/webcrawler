@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("Invalid URL")
 	}
 
-	c := crawler.New(baseURL, 3, 60*time.Second, 1)
+	c := crawler.New(baseURL, 3, 60*time.Second, 50)
 	c.Crawl()
 }
 

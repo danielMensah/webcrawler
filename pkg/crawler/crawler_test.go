@@ -92,17 +92,16 @@ func TestCrawler_Crawl(t *testing.T) {
 			}
 
 			c := &Crawler{
-				httpClient:   server.Client(),
-				baseURL:      server.URL,
-				crawledLinks: make(map[string]bool),
-				tasks:        make(chan string),
-				workers:      10,
-				taskDone:     make(chan bool),
-				wg:           &sync.WaitGroup{},
+				httpClient: server.Client(),
+				baseURL:    server.URL,
+				tasks:      make(chan string),
+				workers:    10,
+				taskDone:   make(chan bool),
+				taskWg:     &sync.WaitGroup{},
 			}
 
 			c.Crawl()
-			visitedUrls := c.crawledLinks.List()
+			visitedUrls := c.GetVisitedLinks()
 
 			assert.ElementsMatch(t, tt.expectedLinks, visitedUrls)
 		})

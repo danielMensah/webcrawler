@@ -19,13 +19,13 @@ type Crawler struct {
 	// httpClient is the HTTP client to use for requests
 	httpClient *http.Client
 	// crawledLinks is a map of links that have been crawled
-	crawledLinks CrawledLinks
+	crawledLinks sync.Map
 	// tasks is the channel to send links to be crawled
 	tasks chan string
 	// taskDone is the channel to receive when a task is done
 	taskDone chan bool
-	// wg is the wait group to wait for all tasks to be done
-	wg *sync.WaitGroup
+	// taskWg is the wait group to wait for all tasks to be done
+	taskWg *sync.WaitGroup
 	// workers is the number of workers to use
 	workers int
 }
@@ -33,13 +33,12 @@ type Crawler struct {
 // New creates a new Crawler
 func New(baseURL string, retryMax int, retryMaxWait time.Duration, workers int) *Crawler {
 	c := &Crawler{
-		baseURL:      baseURL,
-		httpClient:   httpclient.New(retryMax, retryMaxWait),
-		crawledLinks: make(map[string]bool),
-		tasks:        make(chan string),
-		taskDone:     make(chan bool),
-		wg:           &sync.WaitGroup{},
-		workers:      workers,
+		baseURL:    baseURL,
+		httpClient: httpclient.New(retryMax, retryMaxWait),
+		tasks:      make(chan string),
+		taskDone:   make(chan bool),
+		taskWg:     &sync.WaitGroup{},
+		workers:    workers,
 	}
 
 	return c
@@ -47,22 +46,32 @@ func New(baseURL string, retryMax int, retryMaxWait time.Duration, workers int) 
 
 // Crawl starts the crawl process
 func (c *Crawler) Crawl() {
+	log.Info("Starting crawl...")
+	log.Info("Spawning ", c.workers, " workers")
+
 	start := time.Now()
 
-	go c.run()
-	c.wg.Add(1)
+	wg := &sync.WaitGroup{}
+	for i := 0; i < c.workers; i++ {
+		wg.Add(1)
+		go c.run(wg)
+	}
+
+	c.taskWg.Add(1)
 	c.tasks <- c.baseURL
 
-	c.wg.Wait()
+	c.taskWg.Wait()
 	close(c.taskDone)
+	wg.Wait()
 
-	duration := time.Since(start)
-	log.Info("Crawling finished in ", duration)
-	log.Info("Found ", len(c.crawledLinks), " links")
+	log.Info("Crawling finished in ", time.Since(start))
+	log.Info("Found ", len(c.GetVisitedLinks()), " links")
 }
 
 // run starts the crawl process
-func (c *Crawler) run() {
+func (c *Crawler) run(wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	for {
 		select {
 		case <-c.taskDone:
@@ -81,10 +90,11 @@ func (c *Crawler) run() {
 
 // extractContent extracts the links from the given webpage
 func (c *Crawler) extractContent(link string) {
-	defer c.wg.Done()
+	defer c.taskWg.Done()
 
 	// creating custom logger to help with debugging if an error occurs during the request
 	logger := log.WithField("link", link)
+
 	resp, err := c.httpClient.Get(link)
 	if err != nil {
 		logger.WithError(err).Error("failed to get response")
@@ -107,7 +117,6 @@ func (c *Crawler) extractContent(link string) {
 	document.Find("a").Each(func(i int, selection *goquery.Selection) {
 		if href, ok := selection.Attr("href"); ok {
 			formattedURL := formatURL(link, href)
-			logger.WithField("href", formattedURL).Info("found link")
 			c.processLink(formattedURL)
 		}
 	})
@@ -115,11 +124,21 @@ func (c *Crawler) extractContent(link string) {
 
 // processLink checks if the link has been crawled and adds it to the tasks to be crawled
 func (c *Crawler) processLink(crawledLink string) {
-	if !c.crawledLinks[crawledLink] && strings.HasPrefix(crawledLink, c.baseURL) {
-		c.crawledLinks[crawledLink] = true
-		c.wg.Add(1)
+	if _, found := c.crawledLinks.Load(crawledLink); !found && strings.HasPrefix(crawledLink, c.baseURL) {
+		c.crawledLinks.Store(crawledLink, struct{}{})
+		c.taskWg.Add(1)
 		c.tasks <- crawledLink
 	}
+}
+
+func (c *Crawler) GetVisitedLinks() []string {
+	visitedLinks := make([]string, 0)
+	c.crawledLinks.Range(func(key, value interface{}) bool {
+		visitedLinks = append(visitedLinks, key.(string))
+		return true
+	})
+
+	return visitedLinks
 }
 
 // formatURL formats the URL to be absolute
