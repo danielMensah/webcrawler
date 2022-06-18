@@ -1,4 +1,5 @@
-.PHONY: lint
+install:
+	go get -v ./...
 
 lint.fmt:
 	go fmt ./...;
@@ -19,3 +20,9 @@ clean:
 
 test: clean
 	go test ./...;
+
+build:
+	go build -o build/crawler cmd/main.go
+
+make run:
+	./build/crawler
