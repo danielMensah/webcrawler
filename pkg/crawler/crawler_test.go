@@ -2,6 +2,7 @@ package crawler
 
 import (
 	_ "embed"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -25,19 +26,46 @@ var (
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name         string
+		baseURL      string
+		workers      int
 		retryMax     int
 		retryMaxWait time.Duration
+		expectedErr  error
 	}{
 		{
-			name:         "can create a new crawler without options",
+			name:         "can create a new crawler",
+			baseURL:      "https://example.com",
+			workers:      10,
 			retryMax:     3,
 			retryMaxWait: 3 * time.Second,
+			expectedErr:  nil,
+		},
+		{
+			name:         "cannot create a new crawler with missing base url",
+			workers:      10,
+			retryMax:     3,
+			retryMaxWait: 3 * time.Second,
+			expectedErr:  fmt.Errorf(_errInvalidBaseURL, ""),
+		},
+		{
+			name:         "cannot create a new crawler with 0 workers",
+			baseURL:      "https://example.com",
+			workers:      0,
+			retryMax:     3,
+			retryMaxWait: 3 * time.Second,
+			expectedErr:  fmt.Errorf(_errInvalidWorkers, 0),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := New("", tt.retryMax, tt.retryMaxWait, 1)
-			assert.NotNil(t, got)
+			got, err := New(tt.baseURL, tt.retryMax, tt.retryMaxWait, tt.workers)
+
+			if tt.expectedErr != nil {
+				assert.EqualError(t, err, tt.expectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, got)
+			}
 		})
 	}
 }

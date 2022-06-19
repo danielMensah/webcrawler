@@ -1,7 +1,6 @@
 package main
 
 import (
-	"net/url"
 	"os"
 	"time"
 
@@ -16,16 +15,10 @@ func main() {
 	}
 
 	baseURL := args[0]
-	if valid := isValidURL(baseURL); !valid {
-		log.Fatal("Invalid URL")
+	c, err := crawler.New(baseURL, 3, 60*time.Second, 50)
+	if err != nil {
+		log.WithError(err).Fatal("failed to create crawler")
 	}
 
-	c := crawler.New(baseURL, 3, 60*time.Second, 50)
 	c.Crawl()
-}
-
-// isValidURL checks if the URL is valid
-func isValidURL(str string) bool {
-	u, err := url.Parse(str)
-	return err == nil && u.Scheme != "" && u.Host != ""
 }

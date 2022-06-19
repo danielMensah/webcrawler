@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,6 +11,11 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/danielMensah/monzo-challenge-crawler/internal/httpclient"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	_errInvalidBaseURL = "invalid base URL got: %s"
+	_errInvalidWorkers = "workers must be greater than 0 got: %d"
 )
 
 // Crawler handles the crawling process
@@ -31,7 +37,15 @@ type Crawler struct {
 }
 
 // New creates a new Crawler
-func New(baseURL string, retryMax int, retryMaxWait time.Duration, workers int) *Crawler {
+func New(baseURL string, retryMax int, retryMaxWait time.Duration, workers int) (*Crawler, error) {
+	if valid := isValidURL(baseURL); !valid {
+		return nil, fmt.Errorf(_errInvalidBaseURL, baseURL)
+	}
+
+	if workers < 1 {
+		return nil, fmt.Errorf(_errInvalidWorkers, workers)
+	}
+
 	c := &Crawler{
 		baseURL:    baseURL,
 		httpClient: httpclient.New(retryMax, retryMaxWait),
@@ -41,7 +55,7 @@ func New(baseURL string, retryMax int, retryMaxWait time.Duration, workers int) 
 		workers:    workers,
 	}
 
-	return c
+	return c, nil
 }
 
 // Crawl starts the crawl process
@@ -158,4 +172,10 @@ func formatURL(base string, l string) string {
 	}
 
 	return parsedBase.ResolveReference(parsedUrl).String()
+}
+
+// isValidURL checks if the URL is valid
+func isValidURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
