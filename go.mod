@@ -1,4 +1,4 @@
-module github.com/danielMensah/monzo-challenge-crawler
+module github.com/danielMensah/web-crawler
 
 go 1.17
 

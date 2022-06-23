@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/danielMensah/monzo-challenge-crawler/pkg/crawler"
+	"github.com/danielMensah/web-crawler/pkg/crawler"
 	log "github.com/sirupsen/logrus"
 )
 

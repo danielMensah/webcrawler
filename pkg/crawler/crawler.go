@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/danielMensah/monzo-challenge-crawler/internal/httpclient"
+	"github.com/danielMensah/web-crawler/internal/httpclient"
 	log "github.com/sirupsen/logrus"
 )
 
